@@ -1,13 +1,22 @@
+import sys
+import os
+import importlib
 import distutils.core
 
 
+# Trick for avoid installation of non pip installed packages (apt), available by ADDITIONAL_PYTHONPATH
 def is_installed(pkgname):
   try:
-    import cv2 # noqa
-    return True
+    m = importlib.import_module(pkgname)
+    return m is not None
   except Exception:
-    return False
+    pass
+  return False
 
+
+if "ADDITIONAL_PYTHONPATH" in os.environ:
+  add_path = os.environ["ADDITIONAL_PYTHONPATH"]
+  sys.path += add_path.split(':')
 
 install_requires = [
   'asyncio',
@@ -29,8 +38,8 @@ install_requires = [
   'gunicorn ; platform_system != "Windows"',
 ]
 
-if not is_installed('cv2'):
-  # can be installed as opencv-python or opencv-contrib-python
-  install_requires += ['opencv-python']
+for package_import_name, package in [('numpy', 'numpy'), ('cv2', 'opencv-python')]:
+  if not is_installed(package_import_name):
+    install_requires += [package]
 
 distutils.core.setup(install_requires=install_requires)
